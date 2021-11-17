@@ -58,9 +58,6 @@
     <ClCompile Include="Graphics\Renderer.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Texture.cpp">
-      <Filter>Source Files\Graphics</Filter>
-    </ClCompile>
     <ClCompile Include="Input\InputSystem.cpp">
       <Filter>Source Files\Input</Filter>
     </ClCompile>
@@ -84,6 +81,12 @@
     </ClCompile>
     <ClCompile Include="Component\AudioComponent.cpp">
       <Filter>Source Files\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Texture.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\glad\src\glad.c">
+      <Filter>Source Files\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -115,9 +118,6 @@
       <Filter>Source Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Renderer.h">
-      <Filter>Source Files\Graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Texture.h">
       <Filter>Source Files\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Engine.h">
@@ -170,6 +170,9 @@
     </ClInclude>
     <ClInclude Include="MathTypes.h">
       <Filter>Source Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Texture.h">
+      <Filter>Source Files\Graphics</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

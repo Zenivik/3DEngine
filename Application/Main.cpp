@@ -1,3 +1,4 @@
+#include "Engine.h"
 #include <glad\glad.h>
 #include <sdl.h>
 #include <glm/vec3.hpp>
@@ -9,7 +10,16 @@ const float vertices[] =
 {
 	-0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
 	 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-	 0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f
+	 0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	-0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f
+};
+
+
+
+const GLuint indices[] =
+{
+	0, 2, 1,
+	0, 3, 2
 };
 
 // vertex shader
@@ -47,32 +57,12 @@ const char* fragmentSource = R"(
 
 int main(int argc, char** argv)
 {
-	int result = SDL_Init(SDL_INIT_VIDEO);
-	if (result != 0)
-	{
-		SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
-	}
+	nc::Engine engine;
+	engine.Startup();
+	engine.Get<nc::Renderer>()->Create("OpenGL", 800, 600);
 
-	SDL_Window* window = SDL_CreateWindow("OpenGL", 100, 100, 800, 600, SDL_WINDOW_OPENGL);
-	if (window == nullptr)
-	{
-		SDL_Log("Failed to create window: %s", SDL_GetError());
-	}
-
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
-
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-	SDL_GL_SetSwapInterval(1);
-
-	SDL_GLContext context = SDL_GL_CreateContext(window);
-	if (!gladLoadGL())
-	{
-		SDL_Log("Failed to create OpenGL context");
-		exit(-1);
-	}
+	nc::SeedRandom(static_cast<unsigned int>(time(nullptr)));
+	nc::SetFilePath("../resources");
 
 	// set vertex shader
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -133,6 +123,11 @@ int main(int argc, char** argv)
 	// set the vertex data into the vertex buffer
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+	GLuint ebo; // element buffer object
+	glGenBuffers(1, &ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
 	// position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
 	glEnableVertexAttribArray(0);
@@ -172,12 +167,12 @@ int main(int argc, char** argv)
 		glUniform1f(location, std::sin(time));
 		glUniform3fv(tintLocation, 1, &tint[0]);
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		engine.Get<nc::Renderer>()->BeginFrame();
  
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-		SDL_GL_SwapWindow(window);
+		engine.Get<nc::Renderer>()->EndFrame();
+
 	}
 
 	return 0;
