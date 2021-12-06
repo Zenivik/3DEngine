@@ -8,12 +8,18 @@ namespace nc
 		systems.push_back(std::make_unique<EventSystem>());
 		systems.push_back(std::make_unique<AudioSystem>());
 		systems.push_back(std::make_unique<InputSystem>());
+		systems.push_back(std::make_unique<ResourceSystem>());
 
 		std::for_each(systems.begin(), systems.end(), [](auto& system) { system->Startup(); });
 
 		REGISTER_CLASS(Actor)
 		REGISTER_CLASS(PhysicsComponent)
 		REGISTER_CLASS(AudioComponent)
+		REGISTER_CLASS(CameraComponent)
+		REGISTER_CLASS(MeshComponent)
+		REGISTER_CLASS(ModelComponent)
+		REGISTER_CLASS(LightComponent)
+		REGISTER_CLASS(FreeCameraController)
 
 	}
 

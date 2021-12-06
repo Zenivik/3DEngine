@@ -5,143 +5,77 @@
 #include <glm/vec4.hpp>
 #include <iostream>
 
-// vertices
-const float vertices[] =
-{
-	-0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-	 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-	 0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-	-0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f
-};
-
-
-
-const GLuint indices[] =
-{
-	0, 2, 1,
-	0, 3, 2
-};
-
-// vertex shader
-const char* vertexSource = R"(
-    #version 430 core 
-    layout(location = 0) in vec3 position;
-    layout(location = 1) in vec3 color;
-	
-	out vec3 fs_color;
-	
-	uniform float scale;
-
-    void main()
-    {
-		fs_color = color;
-        gl_Position = vec4(position * scale, 1.0);
-    }
-)";
-
-
-
-// fragment
-const char* fragmentSource = R"(
-    #version 430 core
-	in vec3 fs_color;
-    out vec4 outColor; 
-	
-	uniform vec3 tint;
-
-    void main()
-    {
-        outColor = vec4(fs_color * tint, 1.0);
-    }
-)";
-
 int main(int argc, char** argv)
 {
-	nc::Engine engine;
-	engine.Startup();
-	engine.Get<nc::Renderer>()->Create("OpenGL", 800, 600);
+	std::unique_ptr<nc::Engine> engine = std::make_unique<nc::Engine>();
+	engine->Startup();
+	engine->Get<nc::Renderer>()->Create("OpenGL", 800, 600);
+
+	// create scene
+	std::unique_ptr<nc::Scene> scene = std::make_unique<nc::Scene>();
+	scene->engine = engine.get();
 
 	nc::SeedRandom(static_cast<unsigned int>(time(nullptr)));
 	nc::SetFilePath("../resources");
 
-	// set vertex shader
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexSource, NULL);
-	glCompileShader(vertexShader);
-
-	GLint status;
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
-	if (status == GL_FALSE)
+	// create camera
 	{
-		char buffer[512];
-		glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
-		std::cout << buffer;
+		auto actor = CREATE_ENGINE_OBJECT(Actor);
+		actor->name = "camera";
+		actor->transform.position = glm::vec3{ 0, 0, 5 };
+
+		{
+			auto component = CREATE_ENGINE_OBJECT(CameraComponent);
+			component->SetPerspective(45.0f, 800.0f / 600.0f, 0.01f, 100.0f);
+			actor->AddComponent(std::move(component));
+		}
+		
+		{
+			auto component = CREATE_ENGINE_OBJECT(FreeCameraController);
+			component->speed = 8;
+			component->sensitivity = 0.1f;
+			actor->AddComponent(std::move(component));
+		}
+
+		scene->AddActor(std::move(actor));
 	}
-
-	// set fragment shader
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
-	glCompileShader(fragmentShader);
-
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
-	if (status == GL_FALSE)
-	{
-		char buffer[512];
-		glGetShaderInfoLog(fragmentShader, 512, NULL, buffer);
-		std::cout << buffer;
-	}
-
-	//create shader program
-	GLuint shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-
-	// link and use shader program
-	glLinkProgram(shaderProgram);
 	
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
-	if (status == GL_FALSE)
+
+	// create cube
 	{
-		char buffer[512];
-		glGetShaderInfoLog(fragmentShader, 512, NULL, buffer);
-		std::cout << buffer;
+		auto actor = CREATE_ENGINE_OBJECT(Actor);
+		actor->name = "model";
+		actor->transform.position = glm::vec3{ 0, 0, 0 };
+		actor->transform.scale = glm::vec3{ 1 };
+
+		auto component = CREATE_ENGINE_OBJECT(ModelComponent);
+		component->model = engine->Get<nc::ResourceSystem>()->Get<nc::Model>("models/spot.obj");
+		component->material = engine->Get<nc::ResourceSystem>()->Get<nc::Material>("materials/spot.mtl", engine.get());
+
+		/*auto component = nc::ObjectFactory::instance().Create<nc::ModelComponent>("ModelComponent");
+		component->program = engine.Get<nc::ResourceSystem>()->Get<nc::Program>("light_shader");
+		component->model = engine.Get<nc::ResourceSystem>()->Get<nc::Model>("models/spot.obj");*/
+
+		actor->AddComponent(std::move(component));
+		scene->AddActor(std::move(actor));
 	}
 
-	glUseProgram(shaderProgram);
+	// lighting
+	{
+		auto actor = CREATE_ENGINE_OBJECT(Actor);
+		actor->name = "light";
+		actor->transform.position = glm::vec3{ 4 };
 
-	// vertex array
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+		auto component = CREATE_ENGINE_OBJECT(LightComponent);
+		component->ambient = glm::vec3{ 0.2f };
+		component->diffuse = glm::vec3{ 1 };
+		component->specular = glm::vec3{ 1 };
+		actor->AddComponent(std::move(component));
+		scene->AddActor(std::move(actor));
+	}
 
-	// create vertex buffer
-	GLuint vbo;
-	glGenBuffers(1, &vbo);
-
-	// bind vertex buffer as active buffer (state)
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	// set the vertex data into the vertex buffer
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	GLuint ebo; // element buffer object
-	glGenBuffers(1, &ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	// position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
-	glEnableVertexAttribArray(0);
-
-	// color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-
-	// uniform 
-	GLuint location = glGetUniformLocation(shaderProgram, "scale");
-	float time = 0;
-
-	GLuint tintLocation = glGetUniformLocation(shaderProgram, "tint");
-	glm::vec3 tint{ 1.0f, 0.25f, 0.25f, };
+	glm::vec3 translate{ 0 };
+	float angle = 0;
 
 	bool quit = false;
 	while (!quit)
@@ -162,16 +96,21 @@ int main(int argc, char** argv)
 		}
 
 		SDL_PumpEvents();
+		engine->Update();
+		scene->Update(engine->time.deltaTime);
 
-		time += 0.0001f;
-		glUniform1f(location, std::sin(time));
-		glUniform3fv(tintLocation, 1, &tint[0]);
+		// update actor
+		auto actor = scene->FindActor("model");
+		if (actor != nullptr)
+		{
+			actor->transform.rotation.y += engine->time.deltaTime;
+		}
 
-		engine.Get<nc::Renderer>()->BeginFrame();
- 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		engine->Get<nc::Renderer>()->BeginFrame();
 
-		engine.Get<nc::Renderer>()->EndFrame();
+		scene->Draw(nullptr);
+
+		engine->Get<nc::Renderer>()->EndFrame();
 
 	}
 

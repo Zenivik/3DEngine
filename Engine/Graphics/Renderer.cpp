@@ -36,7 +36,7 @@ namespace nc
 
 	void Renderer::Create(const std::string& name, int width, int height)
 	{
-		window = SDL_CreateWindow(name.c_str(), 100, 100, width, height, SDL_WINDOW_OPENGL);
+		window = SDL_CreateWindow(name.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
 		if (window == nullptr)
 		{
 			std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -51,18 +51,20 @@ namespace nc
 		SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 		SDL_GL_SetSwapInterval(1);
 
-		context = SDL_GL_CreateContext(window);
+		SDL_GLContext context = SDL_GL_CreateContext(window);
 		if (!gladLoadGL())
 		{
 			SDL_Log("Failed to create OpenGL context");
 			exit(-1);
 		}
+		
+		glEnable(GL_DEPTH_TEST);
 	}
 
 	void Renderer::BeginFrame()
 	{
 		glClearColor(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
 	void Renderer::EndFrame()
